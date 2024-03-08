@@ -1,0 +1,2 @@
+exports.OTP_EXPIRES_IN_MILLISECONDS = 60 * 60 * 1000;
+exports.OTP_DIGITS = 6;
