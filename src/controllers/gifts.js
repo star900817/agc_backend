@@ -1,17 +1,18 @@
-const Gifts = require('../models/Gift');
-const User = require('../models/User');
-const Bitaqty = require('../models/Bitaqty');
-const axios = require('axios');
-const crypto = require('crypto');
-const Binance = require('../models/Binance');
-const BestSelling = require('../models/BestSelling');
+const Gifts = require("../models/Gift");
+const User = require("../models/User");
+const Bitaqty = require("../models/Bitaqty");
+const axios = require("axios");
+const crypto = require("crypto");
+const Binance = require("../models/Binance");
+const BestSelling = require("../models/BestSelling");
+const Collection = require("../models/Collection");
 
 const {
   createGiftCardCode,
   buyGiftCardCode,
   verifyGiftCardCode,
   redeemGiftCardCode,
-} = require('../services/binance');
+} = require("../services/binance");
 
 exports.getGifts = async (req, res) => {
   try {
@@ -27,43 +28,43 @@ exports.getGifts = async (req, res) => {
       companyId: companyId,
       categoryId: categoryId,
     });
-    if (sort == 'asc') {
+    if (sort == "asc") {
       gifts = await Gifts.find({ companyId: companyId, categoryId: categoryId })
         .skip(skip)
         .limit(limit)
         .sort({ price: 1 })
-        .populate({ path: 'companyId', path: 'categoryId' });
+        .populate({ path: "companyId", path: "categoryId" });
       totalPages = Math.ceil(totalItems / limit);
-    } else if (sort == 'desc') {
+    } else if (sort == "desc") {
       gifts = await Gifts.find({ companyId: companyId, categoryId: categoryId })
         .skip(skip)
         .limit(limit)
         .sort({ price: -1 })
-        .populate({ path: 'companyId', path: 'categoryId' });
+        .populate({ path: "companyId", path: "categoryId" });
       totalPages = Math.ceil(totalItems / limit);
-    } else if (sort == 'lat') {
+    } else if (sort == "lat") {
       gifts = await Gifts.find({ companyId: companyId, categoryId: categoryId })
         .skip(skip)
         .limit(limit)
         .sort({ _id: -1 })
-        .populate({ path: 'companyId', path: 'categoryId' });
+        .populate({ path: "companyId", path: "categoryId" });
       totalPages = Math.ceil(totalItems / limit);
     } else {
       gifts = await Gifts.find({ companyId: companyId, categoryId: categoryId })
         .skip(skip)
         .limit(limit)
-        .populate({ path: 'companyId', path: 'categoryId' });
+        .populate({ path: "companyId", path: "categoryId" });
       totalPages = Math.ceil(totalItems / limit);
     }
     if (!gifts) {
       return res.status(404).json({
         code: 404,
-        message: 'Gifts not found!',
+        message: "Gifts not found!",
       });
     }
     return res.status(200).json({
       code: 200,
-      message: 'Gifts fetched successfully!',
+      message: "Gifts fetched successfully!",
       data: gifts,
       totalItems: totalItems,
       totalPages: totalPages,
@@ -75,14 +76,14 @@ exports.getGifts = async (req, res) => {
 
 exports.getGiftsByCollection = async (req, res) => {
   try {
-    if (req.params.collectionName === 'newArrival') {
+    if (req.params.collectionName === "newArrival") {
       Bitaqty.find()
         .sort({ createdAt: -1 })
         .limit(6)
         .then((result) => {
           return res.status(200).json({
             code: 200,
-            message: 'Product fetch successfully',
+            message: "Product fetch successfully",
             data: result,
           });
         })
@@ -92,9 +93,9 @@ exports.getGiftsByCollection = async (req, res) => {
             message: err.message,
           });
         });
-    } else if (req.params.collectionName === 'bestSelling') {
+    } else if (req.params.collectionName === "bestSelling") {
       BestSelling.find()
-        .populate('bestSelling.productId')
+        .populate("bestSelling.productId")
         .limit(6)
         .then((response) => {
           const sortedArray = response[0].bestSelling.sort(
@@ -107,7 +108,7 @@ exports.getGiftsByCollection = async (req, res) => {
 
           return res.status(200).json({
             code: 200,
-            message: 'Product fetch successfully',
+            message: "Product fetch successfully",
             data: productsInDescendingOrder,
           });
         })
@@ -123,7 +124,7 @@ exports.getGiftsByCollection = async (req, res) => {
         .then((result) => {
           return res.status(200).json({
             code: 200,
-            message: 'Product fetch successfully',
+            message: "Product fetch successfully",
             data: result,
           });
         })
@@ -142,12 +143,12 @@ exports.getGiftsByCollection = async (req, res) => {
 exports.getBinanceGifts = async (req, res) => {
   try {
     Binance.find()
-      .populate('colection')
-      .populate('category')
+      .populate("colection")
+      .populate("category")
       .then((result) => {
         return res.status(200).json({
           code: 200,
-          message: 'Binance card fetch successfully',
+          message: "Binance card fetch successfully",
           data: result,
         });
       })
@@ -168,14 +169,15 @@ exports.addBinanceGifts = async (req, res) => {
     if (!findAdmin) {
       return res.status(404).json({
         code: 404,
-        message: 'User not found!',
+        message: "User not found!",
       });
     }
 
     let Image;
     req.file ? (Image = `images/${req.file.filename}`) : null;
 
-    let { price, isDualToken, baseToken, faceToken, minQty } = req.body;
+
+    let { price, isDualToken, baseToken, faceToken, minQty} = req.body;
 
     if (typeof baseToken === 'undefined') {
       baseToken = 'USDT';
@@ -184,16 +186,16 @@ exports.addBinanceGifts = async (req, res) => {
     if (typeof isDualToken === 'undefined') {
       isDualToken = 'false';
     }
-
+    
     let giftCards = [];
     for (let i = 0; i < parseInt(minQty); i++) {
       let giftCard;
-      if (isDualToken === 'true') {
+      if (isDualToken === 'true') {        
         giftCard = await buyGiftCardCode(baseToken, faceToken, price);
       } else {
         giftCard = await createGiftCardCode(baseToken, price);
       }
-      giftCards.push(giftCard.data);
+      giftCards.push(giftCard.data)
     }
 
     new Binance({
@@ -205,7 +207,7 @@ exports.addBinanceGifts = async (req, res) => {
       .then((result) => {
         return res.status(200).json({
           code: 200,
-          message: 'Binance Card added successfully',
+          message: "Binance Card added successfully",
           data: result,
         });
       })
@@ -216,7 +218,7 @@ exports.addBinanceGifts = async (req, res) => {
         });
       });
   } catch (error) {
-    console.log(error);
+    console.log(error)
     return res.status(500).json({ code: 500, message: error.message });
   }
 };
@@ -227,13 +229,13 @@ exports.addBitaqtyGifts = async (req, res) => {
     if (!productDetails) {
       return res
         .status(400)
-        .json({ code: 400, message: 'Please enter all valid fields' });
+        .json({ code: 400, message: "Please enter all valid fields" });
     }
     const findAdmin = await User.findById(req.user.id);
     if (!findAdmin) {
       return res.status(404).json({
         code: 404,
-        message: 'User not found!',
+        message: "User not found!",
       });
     }
     // if (findAdmin?.role != "admin") {
@@ -246,12 +248,12 @@ exports.addBitaqtyGifts = async (req, res) => {
     req.file ? (Image = `images/${req.file.filename}`) : null;
     const proDetails = JSON.parse(req?.body?.productDetails);
     const existBitaqty = await Bitaqty.findOne({
-      'productDetails.productID': proDetails?.productID,
+      "productDetails.productID": proDetails?.productID,
     });
     if (existBitaqty) {
       return res.status(409).json({
         code: 409,
-        message: 'Card is already exist!',
+        message: "Card is already exist!",
       });
     }
     new Bitaqty({
@@ -260,24 +262,24 @@ exports.addBitaqtyGifts = async (req, res) => {
       priceInSAR: priceInSAR,
       description: description,
       image: Image,
-      ...(req.body?.colection && {
+      ...(req.body?.colection&& {
         colection: req.body?.colection,
-      }),
+      }),      
       ...(req.body.category && {
         category: req.body.category,
       }),
       ...(req.body.subCategory && {
         subCategory: req.body.subCategory,
       }),
-      ...(req.body.isFeatured === 'true' && {
-        productCollection: 'featured',
+      ...(req.body.isFeatured === "true" && {
+        productCollection: "featured",
       }),
     })
       .save()
       .then((result) => {
         return res.status(200).json({
           code: 200,
-          message: 'Card added successfully',
+          message: "Card added successfully",
           data: result,
         });
       })
@@ -299,14 +301,14 @@ exports.updateBinanceGifts = async (req, res) => {
     if (!findAdmin) {
       return res.status(404).json({
         code: 404,
-        message: 'User not found!',
+        message: "User not found!",
       });
     }
     const existBinance = await Binance.findById(cardId);
     if (!existBinance) {
       return res.status(409).json({
         code: 409,
-        message: 'Card is not exist!',
+        message: "Card is not exist!",
       });
     }
 
@@ -314,19 +316,19 @@ exports.updateBinanceGifts = async (req, res) => {
     req.file ? (Image = `images/${req.file.filename}`) : null;
 
     try {
-      for (let i = 0; i < existBinance.giftCards.length; i++) {
-        let giftCard = existBinance.giftCards[i];
-        try {
-          await redeemGiftCardCode(giftCard.code);
-        } catch (error) {
-          console.error('Caught an error:', error.message);
-        }
+    for (let i = 0; i < existBinance.giftCards.length; i++) {
+      let giftCard = existBinance.giftCards[i];
+      try {
+      	await redeemGiftCardCode(giftCard.code);
+      } catch (error) {
+      	console.error('Caught an error:', error.message);
       }
+    }
     } catch (error) {
-      console.error(error);
+	console.error(error);
     }
 
-    let { price, isDualToken, baseToken, faceToken, minQty } = req.body;
+    let { price, isDualToken, baseToken, faceToken, minQty} = req.body;
     if (typeof baseToken === 'undefined') {
       baseToken = 'USDT';
     }
@@ -334,16 +336,16 @@ exports.updateBinanceGifts = async (req, res) => {
     if (typeof isDualToken === 'undefined') {
       isDualToken = 'false';
     }
-
+    
     let giftCards = [];
     for (let i = 0; i < parseInt(minQty); i++) {
       let giftCard;
       if (isDualToken === 'true') {
         giftCard = await buyGiftCardCode(baseToken, faceToken, price);
-      } else if (isDualToken === 'false') {
+      } else if(isDualToken === 'false') {
         giftCard = await createGiftCardCode(baseToken, price);
       }
-      giftCards.push(giftCard.data);
+      giftCards.push(giftCard.data)
     }
     Binance.findByIdAndUpdate(
       existBinance._id,
@@ -363,7 +365,7 @@ exports.updateBinanceGifts = async (req, res) => {
       .then((result) => {
         return res.status(200).json({
           code: 200,
-          message: 'Binance Card updated successfully',
+          message: "Binance Card updated successfully",
           data: result,
         });
       })
@@ -381,17 +383,17 @@ exports.updateBinanceGifts = async (req, res) => {
 exports.updateBitaqtyGifts = async (req, res) => {
   try {
     const { productDetails, cardId } = req.body;
-    console.log(req.body.subCategory);
+console.log(req.body.subCategory)
     if (!productDetails) {
       return res
         .status(400)
-        .json({ code: 400, message: 'Please enter all valid fields' });
+        .json({ code: 400, message: "Please enter all valid fields" });
     }
     const findAdmin = await User.findById(req.user.id);
     if (!findAdmin) {
       return res.status(404).json({
         code: 404,
-        message: 'User not found!',
+        message: "User not found!",
       });
     }
     // if (findAdmin?.role != "admin") {
@@ -407,17 +409,17 @@ exports.updateBitaqtyGifts = async (req, res) => {
     if (!existBitaqty) {
       return res.status(409).json({
         code: 409,
-        message: 'Card is not exist!',
+        message: "Card is not exist!",
       });
     }
     const similarBitaqty = await Bitaqty.findOne({
-      'productDetails.productID': proDetails?.productID,
+      "productDetails.productID": proDetails?.productID,
       _id: { $ne: existBitaqty._id },
     });
     if (similarBitaqty) {
       return res.status(409).json({
         code: 409,
-        message: 'Card is already exist!',
+        message: "Card is already exist!",
       });
     }
     let Image;
@@ -429,20 +431,19 @@ exports.updateBitaqtyGifts = async (req, res) => {
         price: Number(req.body.price),
         priceInSAR: Number(proDetails.priceInSAR),
         image: Image,
-        ...(req.body?.colection && {
-          colection: req.body?.colection,
-        }),
+        ...(req.body?.colection&& {
+        colection: req.body?.colection,
+      }),        
         ...(req.body.category && {
           category: req.body.category,
         }),
-        subCategory: req.body.subCategory,
-      },
+        subCategory: req.body.subCategory,      },
       { new: true }
     )
       .then((result) => {
         return res.status(200).json({
           code: 200,
-          message: 'Card updated successfully',
+          message: "Card updated successfully",
           data: result,
         });
       })
@@ -464,7 +465,7 @@ exports.deleteBinanceGifts = async (req, res) => {
     if (!findAdmin) {
       return res.status(404).json({
         code: 404,
-        message: 'User not found!',
+        message: "User not found!",
       });
     }
 
@@ -472,28 +473,28 @@ exports.deleteBinanceGifts = async (req, res) => {
     if (!existBinance) {
       return res.status(409).json({
         code: 409,
-        message: 'Card is not exist!',
+        message: "Card is not exist!",
       });
     }
 
     try {
-      for (let i = 0; i < existBinance.giftCards.length; i++) {
-        let giftCard = existBinance.giftCards[i];
-        try {
-          await redeemGiftCardCode(giftCard.code);
-        } catch (error) {
-          console.error('Caught an error:', error.message);
-        }
+    for (let i = 0; i < existBinance.giftCards.length; i++) {
+      let giftCard = existBinance.giftCards[i];
+      try {
+      	await redeemGiftCardCode(giftCard.code);
+      } catch (error) {
+      	console.error('Caught an error:', error.message);
       }
+    }
     } catch (error) {
-      console.error(error);
+	console.error(error);
     }
 
     Binance.findByIdAndDelete(existBinance._id)
       .then((result) => {
         return res.status(200).json({
           code: 200,
-          message: 'Binance Card deleted successfully',
+          message: "Binance Card deleted successfully",
           data: result,
         });
       })
@@ -515,7 +516,7 @@ exports.deleteBitaqtyGifts = async (req, res) => {
     if (!findAdmin) {
       return res.status(404).json({
         code: 404,
-        message: 'User not found!',
+        message: "User not found!",
       });
     }
     // if (findAdmin?.role != "admin") {
@@ -528,14 +529,14 @@ exports.deleteBitaqtyGifts = async (req, res) => {
     if (!existBitaqty) {
       return res.status(409).json({
         code: 409,
-        message: 'Card is not exist!',
+        message: "Card is not exist!",
       });
     }
     Bitaqty.findByIdAndDelete(existBitaqty._id)
       .then((result) => {
         return res.status(200).json({
           code: 200,
-          message: 'Card deleted successfully',
+          message: "Card deleted successfully",
           data: result,
         });
       })
@@ -574,28 +575,29 @@ exports.getBinanceAdvanced = async (req, res) => {
 
 exports.getAllGiftCards = async (req, res) => {
   try {
-    const gifts = await Bitaqty.find().populate('colection');
+    const gifts = await Bitaqty.find().populate("colection");
 
     if (!gifts) {
       return res.status(404).json({
         code: 404,
-        message: 'Bitaqty Gifts not found!',
+        message: "Bitaqty Gifts not found!",
       });
     }
 
     return res.status(200).json({
       code: 200,
-      message: 'Bitaqty Gifts fetched successfully!',
+      message: "Bitaqty Gifts fetched successfully!",
       data: gifts,
     });
   } catch (err) {
-    console.log('err', err);
+    console.log("err", err);
     return res.status(500).json({ code: 500, message: err.message });
   }
 };
 
 exports.getSearchProducts = async (req, res) => {
   try {
+    console.log("aaaaaaaaaaaaaaaa")
     const categoryId = req.query.categoryId;
     const subCategoryId = req.query.subCategoryId;
     const collectionId = req.query.collectionId;
@@ -605,78 +607,89 @@ exports.getSearchProducts = async (req, res) => {
 
     let query = {};
     if (categoryId) {
-      query['category'] = categoryId;
+	query['category'] = categoryId;
     }
-
+console.log("bbbbb", searchText)
     if (subCategoryId) {
-      query['subCategory'] = subCategoryId;
+	query['subCategory'] = subCategoryId;
     }
 
     if (collectionId) {
-      query['colection'] = collectionId;
+	query['colection'] = collectionId;
     }
 
     if (searchText) {
-      query['$or'] = [
-        {
-          'productDetails.nameEn': {
-            $regex: searchText,
+const escapedSearchText = searchText.replace(/[$]/g, "\\$");
+	query['$or'] = [{
+	  'productDetails.nameEn' : {
+	    $regex: escapedSearchText,
             $options: 'i',
-          },
-        },
-        {
-          title: {
-            $regex: searchText,
+	  }
+	}, {
+	  'title' : {
+	    $regex: escapedSearchText,
             $options: 'i',
-          },
-        },
-      ];
+	  }
+	}]	
     }
 
-    console.log(query);
+    console.log(query, 'query');
 
     if (limit) {
-      const bitaqties = await Bitaqty.find(query).limit(limit);
-      const binances = await Binance.find(query).limit(limit);
-      return res.status(200).json({
-        code: 200,
-        message: 'Product fetched successfully!',
-        dataLength: bitaqties.length + binances.length,
-        data: [...bitaqties, ...binances],
-      });
+	const bitaqties = await Bitaqty.find(query).limit(limit);
+	const binances = await Binance.find(query).limit(limit);
+console.log("111")
+	return res.status(200).json({
+          code: 200,
+          message: "Product fetched successfully!",
+          dataLength: (bitaqties.length + binances.length),
+          data: [...bitaqties, ...binances],
+        });
     } else {
-      const bitaqties = await Bitaqty.find(query);
-      const binances = await Binance.find(query);
-
-      return res.status(200).json({
-        code: 200,
-        message: 'Product fetched successfully!',
-        dataLength: bitaqties.length + binances.length,
-        data: [...bitaqties, ...binances],
-      });
+console.log("22")
+	const bitaqties = await Bitaqty.find(query);
+	const binances = await Binance.find(query).populate('category');
+console.log(binances, "binances")
+	return res.status(200).json({
+          code: 200,
+          message: "Product fetched successfully!",
+          dataLength: (bitaqties.length + binances.length),
+          data: [...bitaqties, ...binances],
+        });
     }
 
+    
+
     const products = await Binance.find();
-    if (!products) {
+//    const modifiedProducts = [];
+//    for(let i = 0; i < products.length; i++) {
+//	const collection = await Collection.findById(products[i]);
+//	const updatedProduct = {...products[i], collectionName: collection.name}
+//	modifiedProducts.push(updatedProduct)
+//  }
+
+    if (!products ) {
       return res.status(404).json({
         code: 404,
-        message: 'Bitaqty Gifts not found!',
+        message: "Bitaqty Gifts not found!",
       });
     } else {
+console.log("hereadf")
       let newDataArray = [];
-      if (products?.length > 0) {
-        await products.filter((pro) => {
+      if (products ?.length > 0) {
+        await products .filter((pro) => {
           const productName = pro?.productDetails?.nameEn
-            ?.replace(/\s/g, '')
+            ?.replace(/\s/g, "")
             .toLowerCase();
           if (productName.includes(searchText)) {
             newDataArray.push(pro);
           }
         });
       }
+	
       return res.status(200).json({
         code: 200,
-        message: 'Bitaqty Gifts fetched successfully!',
+        message: "Bitaqty Gifts fetched successfully!",
         dataLength: newDataArray.length,
         data: newDataArray,
       });
@@ -690,9 +703,9 @@ exports.createGift = async (req, res) => {
   try {
     const { uId, name, categoryId, companyId, price, description } = req.body;
     const findAdmin = await User.findById(uId);
-    if (findAdmin.role == 'admin') {
+    if (findAdmin.role == "admin") {
       var file = req?.file?.filename;
-      var image = 'images/' + file;
+      var image = "images/" + file;
       const gift = new Gifts({
         companyId,
         categoryId,
@@ -706,7 +719,7 @@ exports.createGift = async (req, res) => {
         .then((result) => {
           return res.status(200).json({
             code: 200,
-            message: 'Gift created successfully!',
+            message: "Gift created successfully!",
             data: result,
           });
         })
@@ -714,7 +727,7 @@ exports.createGift = async (req, res) => {
           return res.status(400).json({ code: 400, message: error.message });
         });
     } else {
-      return res.status(403).json({ code: 403, message: 'You are not Admin' });
+      return res.status(403).json({ code: 403, message: "You are not Admin" });
     }
   } catch (error) {
     return res.status(500).json({ code: 500, message: error.message });
@@ -725,10 +738,10 @@ exports.editGift = async (req, res) => {
   const { uId, cId, name, categoryId, companyId, price, description } =
     req.body;
   var file = req?.file?.filename;
-  var image = 'images/' + file;
+  var image = "images/" + file;
   try {
     const findAdmin = await User.findById(uId);
-    if (findAdmin.role == 'admin') {
+    if (findAdmin.role == "admin") {
       if (file == undefined) {
         await Gifts.findByIdAndUpdate(cId, {
           companyId,
@@ -740,7 +753,7 @@ exports.editGift = async (req, res) => {
           .then((result) => {
             return res.status(200).json({
               code: 200,
-              message: 'Company updated successfully!',
+              message: "Company updated successfully!",
               data: result,
             });
           })
@@ -759,7 +772,7 @@ exports.editGift = async (req, res) => {
           .then((result) => {
             return res.status(200).json({
               code: 200,
-              message: 'Company updated successfully!',
+              message: "Company updated successfully!",
               data: result,
             });
           })
@@ -768,7 +781,7 @@ exports.editGift = async (req, res) => {
           });
       }
     } else {
-      return res.status(403).json({ code: 403, message: 'You are not Admin' });
+      return res.status(403).json({ code: 403, message: "You are not Admin" });
     }
   } catch (error) {
     return res.status(500).json({ code: 500, message: error.message });
@@ -779,12 +792,12 @@ exports.deleteGift = async (req, res) => {
   const { uId, gId } = req.body;
   try {
     const findAdmin = await User.findById(uId);
-    if (findAdmin.role == 'admin') {
+    if (findAdmin.role == "admin") {
       await Gifts.findByIdAndDelete(gId)
         .then((result) => {
           return res.status(200).json({
             code: 200,
-            message: 'Gift deleted successfully!',
+            message: "Gift deleted successfully!",
             data: result,
           });
         })
@@ -792,7 +805,7 @@ exports.deleteGift = async (req, res) => {
           return res.status(400).json({ code: 400, message: error.message });
         });
     } else {
-      return res.status(403).json({ code: 403, message: 'You are not Admin' });
+      return res.status(403).json({ code: 403, message: "You are not Admin" });
     }
   } catch (error) {
     return res.status(500).json({ code: 500, message: error.message });
@@ -803,7 +816,7 @@ exports.getSpecificGift = async (req, res) => {
   try {
     const id = req.params.id;
     await Gifts.findById(id)
-      .populate({ path: 'categoryId', path: 'companyId' })
+      .populate({ path: "categoryId", path: "companyId" })
       .then((result) => {
         return res.status(200).json({ code: 200, data: result });
       })
@@ -824,7 +837,7 @@ exports.searchGift = async (req, res) => {
       $and: [
         { companyId: companyId },
         { categoryId: categoryId },
-        { name: { $regex: search, $options: 'i' } },
+        { name: { $regex: search, $options: "i" } },
       ],
     })
       .then((result) => {
@@ -840,19 +853,19 @@ exports.searchGift = async (req, res) => {
 
 exports.getBitaqatyGiftCards = async (req, res) => {
   try {
-    const password = crypto.createHash('md5');
+    const password = crypto.createHash("md5");
     password.update(
       process.env.RESELLER_USERNAME + process.env.BITAQATY_SECRET_KEY
     );
     const payload = {
       resellerUsername: process.env.RESELLER_USERNAME,
-      merchantId: '',
-      password: password.digest('hex'),
+      merchantId: "",
+      password: password.digest("hex"),
     };
 
     axios
       .post(
-        process.env.CORE_URL_BITAQATY + '/integration/detailed-products-list',
+        process.env.CORE_URL_BITAQATY + "/integration/detailed-products-list",
         payload
       )
       .then((response) => {
@@ -869,7 +882,7 @@ exports.getBitaqatyGiftCards = async (req, res) => {
 exports.getBitaqatySingleGiftCard = async (req, res) => {
   try {
     const productId = req.params.id;
-    const password = crypto.createHash('md5');
+    const password = crypto.createHash("md5");
     password.update(
       process.env.RESELLER_USERNAME +
         productId +
@@ -877,17 +890,17 @@ exports.getBitaqatySingleGiftCard = async (req, res) => {
     );
     const payload = {
       resellerUsername: process.env.RESELLER_USERNAME,
-      password: password.digest('hex'),
+      password: password.digest("hex"),
       productID: productId,
     };
     CO;
     axios
       .post(
-        process.env.CORE_URL_BITAQATY + '/integration/product-detailed-info',
+        process.env.CORE_URL_BITAQATY + "/integration/product-detailed-info",
         payload
       )
       .then((response) => {
-        console.log(response.data, 'RES');
+        console.log(response.data, "RES");
         return res.status(200).json({ code: 200, data: response.data.product });
       })
       .catch((err) => {

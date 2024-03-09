@@ -53,7 +53,7 @@ const UserSchema = new mongoose.Schema(
         },
         itemType: {
           type: String,
-          enum: ["bitaqty", "gifts", "binance"],
+          enum: ["bitaqty", "gifts", "binance", "Binance"],
           default: "bitaqty",
           required: true,
         },
@@ -68,7 +68,7 @@ const UserSchema = new mongoose.Schema(
         },
         productType: {
           type: String,
-          enum: ["bitaqty", "gifts", "binance"],
+          enum: ["bitaqty", "gifts", "binance", "Binance"],
           default: "bitaqty",
         },
         quantity: { type: Number },

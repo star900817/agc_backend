@@ -66,7 +66,7 @@ exports.CodeSharingTemplate = ({
                                                                     (product) =>
                                                                       '<div style="margin-bottom: 10px">' +
                                                                       '<div style="display: flex">' +
-                                                                      "<img src=" + "https://ci3.googleusercontent.com/meips/ADKq_NZqmLHPbL5uTWAVyG8oRc6hmc8jQkKiefHL8valMsXKXBJJJ3NJwirPknQBqJhhDrtnCpFibJYzK03rGtq8Zog1O36Er_bYEHhy5CHCPQ=s0-d-e1-ft#https://arabgiftcard.com//" +
+                                                                      "<img src=" + "https://arabgiftcard.com//" +
                                                                       product.productImage +
                                                                       ' height="100" width="100" />' +
                                                                       '<div style="margin-left: 15px">' +

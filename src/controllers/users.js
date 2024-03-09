@@ -1,25 +1,25 @@
-const validator = require('validator');
-const { sendOtp } = require('../services/aws.js');
+const validator = require("validator");
+const { sendOtp } = require("../services/aws.js");
 const {
   generateAccessToken,
   generateRefreshToken,
   generateAdminAccessToken,
-} = require('../services/jwt.js');
-const { hashPassword, matchPassword } = require('../services/bcrypt.js');
-const { generateOtp } = require('../services/otp.js');
-const User = require('../models/User.js');
-const Otp = require('../models/Otp.js');
-const { OTP_EXPIRES_IN_MILLISECONDS } = require('../utils/constants.js');
-const { sendEmail } = require('../middlewares/mail.js');
-const { generateRandomString } = require('../utils/generateRandomString.js');
-const nodemailer = require('nodemailer');
-const bcrypt = require('bcryptjs');
+} = require("../services/jwt.js");
+const { hashPassword, matchPassword } = require("../services/bcrypt.js");
+const { generateOtp } = require("../services/otp.js");
+const User = require("../models/User.js");
+const Otp = require("../models/Otp.js");
+const { OTP_EXPIRES_IN_MILLISECONDS } = require("../utils/constants.js");
+const { sendEmail } = require("../middlewares/mail.js");
+const { generateRandomString } = require("../utils/generateRandomString.js");
+const nodemailer = require("nodemailer");
+const bcrypt = require("bcrypt");
 const {
   ForgotPasswordEmailTemplate,
-} = require('../emailTemplate/forgetPasswordEmailTemplate.js');
-const { sendOptOnPhone } = require('../middlewares/sendOtpOnPhone.js');
+} = require("../emailTemplate/forgetPasswordEmailTemplate.js");
+const { sendOptOnPhone } = require("../middlewares/sendOtpOnPhone.js");
 const strongPassword = new RegExp(
-  '(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9])(?=.{6,20})'
+  "(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9])(?=.{6,20})"
 );
 
 const emailRegex =
@@ -31,7 +31,7 @@ exports.signUp = async (req, res) => {
     if (!validator.isEmail(email)) {
       return res.status(422).json({
         code: 422,
-        message: 'Please enter a valid email address !',
+        message: "Please enter a valid email address !",
       });
     }
 
@@ -48,14 +48,14 @@ exports.signUp = async (req, res) => {
       return res.status(409).json({
         code: 409,
         message:
-          'The email address you entered is already associated with another account!',
+          "The email address you entered is already associated with another account!",
       });
     }
     if (userWithPhone) {
       return res.status(409).json({
         code: 409,
         message:
-          'The phone number you entered is already associated with another account!',
+          "The phone number you entered is already associated with another account!",
       });
     }
     let otp = await generateOtp();
@@ -68,8 +68,8 @@ exports.signUp = async (req, res) => {
       .save()
       .then(async (result) => {
         let hashOtp = await hashPassword(otp);
-        if (!phoneNumber.startsWith('+')) {
-          phoneNumber = '+966' + phoneNumber;
+        if (!phoneNumber.startsWith("+")) {
+          phoneNumber = "+966" + phoneNumber;
         }
         let oldOtp = await Otp.find({ phoneNumber });
         if (oldOtp.length > 0) {
@@ -78,7 +78,7 @@ exports.signUp = async (req, res) => {
         // sendOtp(otp, phoneNumber, email)
         sendEmail(
           email,
-          'Verification OTP',
+          "Verification OTP",
           `Please enter this OTP to verify your account : ${otp}`
         );
 
@@ -96,14 +96,14 @@ exports.signUp = async (req, res) => {
             .then(() => {
               return res.status(200).json({
                 code: 200,
-                message: 'OTP Sent successfully!',
+                message: "OTP Sent successfully!",
               });
             });
         } else {
           return res.status(300).json({
             code: 300,
             message:
-              'The number seems not to valid in Saudi Arabia. Please enter valid number.',
+              "The number seems not to valid in Saudi Arabia. Please enter valid number.",
           });
         }
       })
@@ -127,7 +127,7 @@ exports.signUpForAdmin = async (req, res) => {
     if (!validator.isEmail(email)) {
       return res.status(422).json({
         code: 422,
-        message: 'Please enter a valid email address !',
+        message: "Please enter a valid email address !",
       });
     }
 
@@ -144,20 +144,20 @@ exports.signUpForAdmin = async (req, res) => {
       return res.status(409).json({
         code: 409,
         message:
-          'The email address you entered is already associated with another account!',
+          "The email address you entered is already associated with another account!",
       });
     }
     if (userWithPhone) {
       return res.status(409).json({
         code: 409,
         message:
-          'The phone number you entered is already associated with another account!',
+          "The phone number you entered is already associated with another account!",
       });
     }
     const hashedPassword = await hashPassword(password);
     new User({
       ...req.body,
-      role: 'admin',
+      role: "admin",
       auth: true,
       password: hashedPassword,
     })
@@ -165,7 +165,7 @@ exports.signUpForAdmin = async (req, res) => {
       .then(async (result) => {
         return res.status(200).send({
           success: true,
-          message: 'Successfully created admin account',
+          message: "Successfully created admin account",
         });
       })
       .catch((err) => {
@@ -182,27 +182,27 @@ exports.signUpForAdmin = async (req, res) => {
 exports.verifyUser = async (req, res) => {
   try {
     const { phoneNumber, otp } = req.body;
-    if (!phoneNumber.startsWith('+')) {
-      phoneNumber = '+966' + phoneNumber;
+    if (!phoneNumber.startsWith("+")) {
+      phoneNumber = "+966" + phoneNumber;
     }
     let user = await User.findOne({ phoneNumber });
     if (!user) {
       return res.status(404).json({
         code: 404,
-        message: 'User not found!',
+        message: "User not found!",
       });
     }
     if (user.auth) {
       return res.status(200).json({
         code: 200,
-        message: 'User already verified!',
+        message: "User already verified!",
       });
     }
     const getOtp = await Otp.findOne({ phoneNumber }).lean().exec();
     if (!getOtp) {
       return res.status(404).json({
         code: 404,
-        message: 'OTP expired. Please try again',
+        message: "OTP expired. Please try again",
       });
     }
     const storedHashedOTP = getOtp.otp;
@@ -221,7 +221,7 @@ exports.verifyUser = async (req, res) => {
           Otp.deleteMany({ phoneNumber }).then(() => {
             return res.status(200).json({
               code: 200,
-              message: 'User verified successfully!',
+              message: "User verified successfully!",
             });
           });
         })
@@ -234,7 +234,7 @@ exports.verifyUser = async (req, res) => {
     } else {
       return res.status(400).json({
         code: 400,
-        message: 'Invalid OTP or OTP has expired',
+        message: "Invalid OTP or OTP has expired",
       });
     }
   } catch (error) {
@@ -252,8 +252,8 @@ exports.resendOtp = async (req, res) => {
     if (oldOtp.length > 0) {
       await Otp.deleteMany({ phoneNumber });
     }
-    if (!phoneNumber.startsWith('+')) {
-      phoneNumber = '+966' + phoneNumber;
+    if (!phoneNumber.startsWith("+")) {
+      phoneNumber = "+966" + phoneNumber;
     }
 
     const { success, message, data } = await sendOptOnPhone(
@@ -271,7 +271,7 @@ exports.resendOtp = async (req, res) => {
             .then(() => {
               return res.status(200).json({
                 code: 200,
-                message: 'OTP Sent successfully!',
+                message: "OTP Sent successfully!",
               });
             });
         })
@@ -282,11 +282,11 @@ exports.resendOtp = async (req, res) => {
       return res.status(300).json({
         code: 300,
         message:
-          'The number seems not to valid in Saudi Arabia. Please enter valid number.',
+          "The number seems not to valid in Saudi Arabia. Please enter valid number.",
       });
     }
   } catch (error) {
-    console.log(error, '...');
+    console.log(error, "...");
     return res.status(500).json({ code: 500, message: error.message });
   }
 };
@@ -308,27 +308,27 @@ exports.signIn = async (req, res) => {
     if (!userExistence) {
       return res.status(401).json({
         code: 401,
-        message: 'User not found!',
+        message: "User not found!",
       });
     }
 
     if (userExistence?.loginWithSocial) {
       return res.status(401).json({
         code: 401,
-        message: 'Please Login with Social Media -As you did earlier.',
+        message: "Please Login with Social Media -As you did earlier.",
       });
     }
     const compare = await matchPassword(password, userExistence.password);
     if (!compare) {
       return res
         .status(401)
-        .json({ code: 401, message: 'Invalid credentials!' });
+        .json({ code: 401, message: "Invalid credentials!" });
     }
 
     if (userExistence.auth === false) {
       return res.status(404).json({
         code: 404,
-        message: 'User not verified, Please verify first!',
+        message: "User not verified, Please verify first!",
       });
     }
 
@@ -336,7 +336,7 @@ exports.signIn = async (req, res) => {
     const refreshToken = generateRefreshToken(userExistence._id);
     return res.status(200).json({
       code: 200,
-      message: 'User logged in successfully !',
+      message: "User logged in successfully !",
       accessToken: accessToken,
       refreshToken: refreshToken,
       data: userExistence,
@@ -365,7 +365,7 @@ exports.loginWithGoogle = async (req, res) => {
         const refreshToken = generateRefreshToken(userExistence._id);
         return res.status(200).json({
           code: 200,
-          message: 'User logged in successfully !',
+          message: "User logged in successfully !",
           accessToken: accessToken,
           refreshToken: refreshToken,
           data: userExistence,
@@ -377,7 +377,7 @@ exports.loginWithGoogle = async (req, res) => {
           const refreshToken = generateRefreshToken(result._id);
           return res.status(200).json({
             code: 200,
-            message: 'User logged in successfully !',
+            message: "User logged in successfully !",
             accessToken: accessToken,
             refreshToken: refreshToken,
             data: result,
@@ -411,20 +411,20 @@ exports.signInByAdmin = async (req, res) => {
     if (!userExistence) {
       return res.status(401).json({
         code: 401,
-        message: 'User not found!',
+        message: "User not found!",
       });
     }
     const compare = await matchPassword(password, userExistence.password);
     if (!compare) {
       return res
         .status(401)
-        .json({ code: 401, message: 'Invalid credentials!' });
+        .json({ code: 401, message: "Invalid credentials!" });
     }
 
     const accessToken = generateAdminAccessToken(userExistence._id);
     return res.status(200).json({
       code: 200,
-      message: 'Admin logged in successfully !',
+      message: "Admin logged in successfully !",
       accessToken: accessToken,
       success: true,
       data: userExistence,
@@ -444,13 +444,13 @@ exports.forgotPasswordOtp = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         code: 404,
-        message: 'User not found!',
+        message: "User not found!",
       });
     }
     if (user.auth == false) {
       return res.status(404).json({
         code: 404,
-        message: 'User not verified, Please verify first!',
+        message: "User not verified, Please verify first!",
       });
     }
     let otp = await generateOtp();
@@ -485,20 +485,20 @@ exports.forgotPassword = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         code: 404,
-        message: 'User not found!',
+        message: "User not found!",
       });
     }
     if (user.auth == false) {
       return res.status(404).json({
         code: 404,
-        message: 'User not verified, Please verify first!',
+        message: "User not verified, Please verify first!",
       });
     }
     const getOtp = await Otp.findOne({ phoneNumber }).lean().exec();
     if (!getOtp) {
       return res.status(404).json({
         code: 404,
-        message: 'OTP expired. Please try again',
+        message: "OTP expired. Please try again",
       });
     }
     const storedHashedOTP = getOtp.otp;
@@ -512,7 +512,7 @@ exports.forgotPassword = async (req, res) => {
         return res.status(422).json({
           code: 422,
           message:
-            'Please Enter Password 8 to 20 single-byte alphanumeric characters and symbols(-._@) !',
+            "Please Enter Password 8 to 20 single-byte alphanumeric characters and symbols(-._@) !",
         });
       }
       User.findOneAndUpdate(
@@ -524,7 +524,7 @@ exports.forgotPassword = async (req, res) => {
           Otp.deleteMany({ phoneNumber: phoneNumber }).then(() => {
             return res.status(200).json({
               code: 200,
-              message: 'Password Reset Successfully',
+              message: "Password Reset Successfully",
             });
           });
         })
@@ -537,7 +537,7 @@ exports.forgotPassword = async (req, res) => {
     } else {
       return res.status(400).json({
         code: 400,
-        message: 'Invalid OTP or OTP has expired',
+        message: "Invalid OTP or OTP has expired",
       });
     }
   } catch (error) {
@@ -550,7 +550,7 @@ exports.resetPassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
     const user = await User.findById({ _id: req.user.id });
     if (!user) {
-      return res.status(404).json({ code: 404, message: 'User not found' });
+      return res.status(404).json({ code: 404, message: "User not found" });
     }
     const checkCurrentPassword = await matchPassword(
       currentPassword,
@@ -559,13 +559,13 @@ exports.resetPassword = async (req, res) => {
     if (!checkCurrentPassword) {
       return res
         .status(404)
-        .json({ code: 404, message: 'Current password is incorrect' });
+        .json({ code: 404, message: "Current password is incorrect" });
     }
     if (!strongPassword.test(newPassword.trim())) {
       return res.status(422).json({
         code: 422,
         message:
-          'Please Enter Password 8 to 20 single-byte alphanumeric characters and symbols(-._@) !',
+          "Please Enter Password 8 to 20 single-byte alphanumeric characters and symbols(-._@) !",
       });
     }
     const hashpassword = await hashPassword(newPassword);
@@ -577,7 +577,7 @@ exports.resetPassword = async (req, res) => {
       .then((result) => {
         return res.status(200).json({
           code: 200,
-          message: 'Password reset successfully!',
+          message: "Password reset successfully!",
           data: result,
         });
       })
@@ -595,11 +595,11 @@ exports.resetPassword = async (req, res) => {
 
 exports.getUsers = async (req, res) => {
   try {
-    User.find({ role: { $ne: 'customer' } })
+    User.find({ role: { $ne: "customer" } })
       .then((result) => {
         return res.status(200).json({
           code: 200,
-          message: 'User details fetched successfully!',
+          message: "User details fetched successfully!",
           data: result,
           success: true,
         });
@@ -619,7 +619,7 @@ exports.getSingleUser = async (req, res) => {
       .then((result) => {
         return res.status(200).json({
           code: 200,
-          message: 'User details fetched successfully!',
+          message: "User details fetched successfully!",
           data: result,
         });
       })
@@ -633,11 +633,11 @@ exports.getSingleUser = async (req, res) => {
 
 exports.getCustomerUser = async (req, res) => {
   try {
-    User.find({ role: 'customer' })
+    User.find({ role: "customer" })
       .then((result) => {
         return res.status(200).json({
           code: 200,
-          message: 'User details fetched successfully!',
+          message: "User details fetched successfully!",
           data: result,
           success: true,
         });
@@ -666,7 +666,7 @@ exports.updateUser = async (req, res) => {
       .then((result) => {
         return res.status(200).json({
           code: 200,
-          message: 'User details updated successfully!',
+          message: "User details updated successfully!",
           data: result,
         });
       })
@@ -681,8 +681,8 @@ exports.updateUser = async (req, res) => {
 exports.phoneNumberChangeOTP = async (req, res) => {
   try {
     let { phoneNumber } = req.body;
-    if (!phoneNumber.startsWith('+')) {
-      phoneNumber = '+966' + phoneNumber;
+    if (!phoneNumber.startsWith("+")) {
+      phoneNumber = "+966" + phoneNumber;
     }
     await Otp.deleteMany({ phoneNumber }).lean().exec();
     const otp = await generateOtp();
@@ -701,7 +701,7 @@ exports.phoneNumberChangeOTP = async (req, res) => {
           .then(() => {
             return res.status(200).json({
               code: 200,
-              message: 'OTP Sent successfully!',
+              message: "OTP Sent successfully!",
               data: phoneNumber,
             });
           });
@@ -717,27 +717,27 @@ exports.phoneNumberChangeOTP = async (req, res) => {
 exports.changePhoneNumber = async (req, res) => {
   try {
     let { id, phoneNumber, otp } = req.body;
-    if (!phoneNumber.startsWith('+')) {
-      phoneNumber = '+966' + phoneNumber;
+    if (!phoneNumber.startsWith("+")) {
+      phoneNumber = "+966" + phoneNumber;
     }
     let user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({
         code: 404,
-        message: 'User not found!',
+        message: "User not found!",
       });
     }
     if (user.auth == false) {
       return res.status(404).json({
         code: 404,
-        message: 'User not verified, Please verify first!',
+        message: "User not verified, Please verify first!",
       });
     }
     const getOtp = await Otp.findOne({ phoneNumber }).lean().exec();
     if (!getOtp) {
       return res.status(404).json({
         code: 404,
-        message: 'OTP expired. Please try again',
+        message: "OTP expired. Please try again",
       });
     }
     const storedHashedOTP = getOtp.otp;
@@ -756,7 +756,7 @@ exports.changePhoneNumber = async (req, res) => {
           Otp.deleteMany({ phoneNumber: phoneNumber }).then(() => {
             return res.status(200).json({
               code: 200,
-              message: 'Phone Number Edited successfully!',
+              message: "Phone Number Edited successfully!",
             });
           });
         })
@@ -769,7 +769,7 @@ exports.changePhoneNumber = async (req, res) => {
     } else {
       return res.status(400).json({
         code: 400,
-        message: 'Invalid OTP or OTP has expired',
+        message: "Invalid OTP or OTP has expired",
       });
     }
   } catch (error) {
@@ -784,7 +784,7 @@ exports.createUser = async (req, res) => {
     if (!validator.isEmail(email)) {
       return res.status(422).json({
         code: 422,
-        message: 'Please enter a valid email address !',
+        message: "Please enter a valid email address !",
       });
     }
 
@@ -792,7 +792,7 @@ exports.createUser = async (req, res) => {
       return res.status(422).json({
         code: 422,
         message:
-          'Please Enter Password 8 to 20 single-byte alphanumeric characters and symbols(-._@) !',
+          "Please Enter Password 8 to 20 single-byte alphanumeric characters and symbols(-._@) !",
       });
     }
     const user = await User.findOne({ email }).lean().exec();
@@ -801,14 +801,14 @@ exports.createUser = async (req, res) => {
       return res.status(409).json({
         code: 409,
         message:
-          'The email address you entered is already associated with another account!',
+          "The email address you entered is already associated with another account!",
       });
     }
     if (userWithPhone) {
       return res.status(409).json({
         code: 409,
         message:
-          'The phone number you entered is already associated with another account!',
+          "The phone number you entered is already associated with another account!",
       });
     }
     const hashedPassword = await hashPassword(password);
@@ -817,7 +817,7 @@ exports.createUser = async (req, res) => {
       .then(async (result) => {
         return res.status(200).send({
           success: true,
-          message: 'Successfully created user account',
+          message: "Successfully created user account",
           data: result,
         });
       })
@@ -839,7 +839,7 @@ exports.updateUserByAdmin = async (req, res) => {
     if (!validator.isEmail(email)) {
       return res.status(422).json({
         code: 422,
-        message: 'Please enter a valid email address !',
+        message: "Please enter a valid email address !",
       });
     }
 
@@ -855,7 +855,7 @@ exports.updateUserByAdmin = async (req, res) => {
       .then((response) => {
         return res.status(200).send({
           success: true,
-          message: 'Successfully updated password',
+          message: "Successfully updated password",
           data: response,
         });
       })
@@ -924,13 +924,13 @@ exports.deleteUser = async (req, res) => {
     if (!remove) {
       return res
         .status(500)
-        .json({ code: 500, message: 'Error while removing users' });
+        .json({ code: 500, message: "Error while removing users" });
     }
 
     res.status(200).send({
       code: 200,
       success: true,
-      message: 'User successfully removed!',
+      message: "User successfully removed!",
     });
   } catch (error) {
     return res.status(500).json({ code: 500, message: error.message });
@@ -949,7 +949,7 @@ exports.contactUs = async (req, res) => {
     sendEmail(process.env.NODEMAILER_ARAB_CARD_EMAIL, subject, text);
     return res.status(200).json({
       code: 200,
-      message: 'Mail Sent successfully!',
+      message: "Mail Sent successfully!",
     });
   } catch (error) {
     return res.status(500).json({ code: 500, message: error.message });
@@ -961,7 +961,7 @@ exports.getForgetPassVerificationLink = async (req, res) => {
     const { email } = req.body;
     const user = await User.findOne({ email: email });
     if (!user)
-      return res.status(300).json({ code: 300, message: 'User not found!' });
+      return res.status(300).json({ code: 300, message: "User not found!" });
 
     const newOTP = generateRandomString(6);
     const OTPSaved = await User.findOneAndUpdate(
@@ -974,9 +974,9 @@ exports.getForgetPassVerificationLink = async (req, res) => {
     if (!OTPSaved) {
       return res
         .status(300)
-        .json({ code: 300, message: 'OTP not generated please try again!' });
+        .json({ code: 300, message: "OTP not generated please try again!" });
     }
-
+console.log(newOTP, 'newOTP')
     const transporter = nodemailer.createTransport({
       host: process.env.NODEMAILTER_HOST,
       port: process.env.NODEMAILTER_PORT,
@@ -986,16 +986,17 @@ exports.getForgetPassVerificationLink = async (req, res) => {
         pass: process.env.NODEMAILER_PASSWORD,
       },
     });
-    console.log(newOTP);
-    const emailLink = {
-      user: `${process.env.FRONTEND_BASE_URL}/forgetPasswordHandlePage?otp=${newOTP}&email=${email}`,
-      admin: `${process.env.FRONTEND_BASE_URL}/resetPassword?otp=${newOTP}&email=${email}`,
-    };
 
+    const emailLink = {
+      user: `arabgiftcard.com/forgetPasswordHandlePage?otp=${newOTP}&email=${email}`,
+      customer: `arabgiftcard.com/forgetPasswordHandlePage?otp=${newOTP}&email=${email}`,
+      admin: `arabgiftcard.com/resetPassword?otp=${newOTP}&email=${email}`,
+    };
+console.log(emailLink)
     const emailSent = await ForgotPasswordEmailTemplate({
       to: email,
       from: process.env.NODEMAILTER_USER,
-      subject: 'Request for reset password',
+      subject: "Request for reset password",
       link: emailLink[user.role],
       transporter,
       role: user.role,
@@ -1004,13 +1005,13 @@ exports.getForgetPassVerificationLink = async (req, res) => {
     if (!emailSent) {
       return res.status(300).json({
         code: 300,
-        message: 'Verification email not sent! Please try again.',
+        message: "Verification email not sent! Please try again.",
       });
     }
 
     return res.status(200).json({
       code: 200,
-      message: 'Email sent successfully. please check inbox.',
+      message: "Email sent successfully. please check inbox.",
     });
   } catch (error) {
     return res.status(500).json({ code: 500, message: error.message });
@@ -1019,7 +1020,7 @@ exports.getForgetPassVerificationLink = async (req, res) => {
 
 exports.verifyOtpWithPasswordChange = async (req, res, next) => {
   try {
-    const { otp, email, newPassword } = req.body;
+    const { otp, email, password } = req.body;
 
     const user = await User.findOne({ email: email });
     if (!user)
@@ -1045,12 +1046,17 @@ exports.verifyOtpWithPasswordChange = async (req, res, next) => {
       });
     }
 
+    if (!password) {
+      return res.status(400).json({ code: 400, message: 'New password is required' });
+    }
+
     const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt); // Hash the new password
 
     const updatedUser = await User.findOneAndUpdate(
       { email: email },
       {
-        password: bcrypt.hashSync(newPassword, salt),
+        password: hashedPassword, // Use the hashed password
       }
     );
 

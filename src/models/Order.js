@@ -32,6 +32,7 @@ const orderSchema = new mongoose.Schema(
           default: "bitaqty",
           required: true,
         },
+	collectionName: {type: String},
         quantity: {
           type: Number,
         },
